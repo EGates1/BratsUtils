@@ -31,8 +31,8 @@ import random
 
 directory = "/rsrch1/ip/jgpauloski/BraTS_Data/MICCAI_BraTS_2018_Data_Training/"
 output = ""
-filepaths = "../BraTS_Data/MICCAI_BraTS_2018_Data_Training/BraTS18_filepaths_val.csv"
-channels = ["T1", "T2", "T1C", "FLAIR", "seg"]
+filepaths = "../BraTS_Data/MICCAI_BraTS_2018_Data_Training/BraTS18_filepaths_train.csv"
+channels = ["T1_norm", "T2_norm", "T1C_norm", "FLAIR_norm", "seg", "preprocess_roi"]
 ch_range = range(len(channels))
 train_split = 0.00
 val_split = 0.00
@@ -64,10 +64,8 @@ for i in range(len(fp.index)):
     elif split < val_split + train_split:
         for j in ch_range:
             val_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
-        val_pred.write(fp["BraTS18ID"].iloc[i] + "/" + 
-                fp["BraTS18ID"].iloc[i] + "_pred.nii.gz" + "\n")
+        val_pred.write(fp["BraTS18ID"].iloc[i] + "_pred.nii.gz" + "\n")
     elif split < test_split + val_split + train_split:
         for j in ch_range:
             test_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
-        test_pred.write(fp["BraTS18ID"].iloc[i] + "/" +
-                fp["BraTS18ID"].iloc[i] + "_pred.nii.gz" + "\n")
+        test_pred.write(fp["BraTS18ID"].iloc[i] + "_pred.nii.gz" + "\n")
