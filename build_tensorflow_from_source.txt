@@ -1,0 +1,80 @@
+1. Install miniconda and pip packages
+
+   $ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh;  bash Miniconda3-latest-Linux-x86_64.sh
+   $ conda install pip
+   $ pip install numpy nibabel keras
+   $ conda install matplotlib jupyter notebook pandas scikit-learn scikit-image
+
+2. Clone tensorflow
+
+   $ cd /opt/apps
+   $ git clone https://github.com/tensorflow/tensorflow
+
+3. Install Cuda 9.1 following package manager installation found here:
+     https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+   Don't forget the post-installation actions where paths are set!!!
+
+4. Install Cudnn 7.1 following these instructions
+     https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html
+
+5. Cuda 9.1 is only compatible with GCC 6 so check gcc version
+  
+   $ gcc --version
+
+   If version 6 is not installed, install GCC 6 using the following steps
+   found from http://itsonlycode.blogspot.com/2015/05/install-multiple-versions-of-gcc-at.html
+
+   $ sudo apt-get install gcc-6 g++-6
+   $ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+   $ sudo apt-get update
+   $ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 40
+   $ sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 40
+   $ sudo update-alternatives --set cc /usr/bin/gcc
+   $ sudo update-alternatives --set c++ /usr/bin/g++
+   $ sudo update-alternatives --config gcc
+   $ sudo update-alternatives --config g++
+
+6. Fix Cuda symlinks
+   see the following threads for why this is necessary
+     https://github.com/tensorflow/tensorflow/issues/15889
+     https://github.com/tensorflow/tensorflow/issues/15142
+
+   $ sudo sh -c "echo '/usr/local/cuda/lib64' > /etc/ld.so.conf.d/cuda.conf"
+   $ sudo ldconfig
+ 
+   If ldconfig throws an error, do the following, else skip to next step
+     https://askubuntu.com/questions/1025928/why-do-i-get-sbin-ldconfig-real-usr-local-cuda-lib64-libcudnn-so-7-is-not-a
+
+   $ cd /usr/local/cuda/lib64
+   $ ls -lha libcudnn* 
+
+   There should be two symlinks `libcudnn.so -> libcudnn.so.7` and `libcudnn.so.7 -> libcudnn.so.7.1.4`. If the symlinks are not there do this
+
+   $ sudo rm libcudnn.so
+   $ sudo rm libcudnn.so.7
+   $ sudo ln libcudnn.so.7.1.4 libcudnn.so.7
+   $ sudo ln libcudnn.so.7 libcudnn.so
+   $ sudo ldconfig
+
+   ldconfig should run without errors now
+
+7. Build tensorflow
+     https://www.tensorflow.org/install/install_sources#configure_the_installation
+
+   $ cd /opt/apps/tensorflow
+
+   Go through configure steps. Pretty much everything should be default except
+   python path which should be something like
+     /opt/apps/miniconda/miniconda3/bin/python3.6
+   Specify correct versions of cuda, cudnn, nvidia card compute capability etc
+ 
+   $ ./configure               # may need to use sudo for this
+   $ bazel build --config=opt --config=cuda //tensorflow/tools/pip_package:build_pip_package
+
+   If this bazel build fails try it with this arg --action_env="LD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
+
+   $ bazel-bin/tensorflow/tools/pip_package/build_pip_package /tmp/tensorflow_pkg
+
+8. Install tensorflow from pip package
+
+   $ sudo pip install /tmp/tensorflow_pkg/tensorflow-1.9.0-something.whl

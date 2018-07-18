@@ -27,16 +27,32 @@
 #     filenames corresponding to each patient in the val and test sets 
 
 import pandas as pd
-import random
+import random, argparse, os
 
-directory = "/rsrch1/ip/jgpauloski/BraTS_Data/MICCAI_BraTS_2018_Data_Training/"
-output = ""
-filepaths = "../BraTS_Data/MICCAI_BraTS_2018_Data_Training/BraTS18_filepaths_train.csv"
-channels = ["T1_norm", "T2_norm", "T1C_norm", "FLAIR_norm", "seg", "preprocess_roi"]
-ch_range = range(len(channels))
-train_split = 0.00
-val_split = 0.00
-test_split = 1.00
+# Get params from cmd line
+parser = argparse.ArgumentParser(description = "Partition filepaths into " + 
+    "text files for deepmedic")
+parser.add_argument("--file", "-f", help = "CSV with filepaths",
+      required = True)
+parser.add_argument("--type", default = "all",
+      help = "Type [HGG, LGG, VAL, TEST, all] in csv file to use")
+parser.add_argument("--train", default = 0, type = float,
+      help = "Ratio [0,1] of cases to put in train set")
+parser.add_argument("--val", default = 0, type = float,
+      help = "Ratio [0,1] of cases to put in validation set")
+parser.add_argument("--test", default = 0, type = float,
+      help = "Ratio [0,1] of cases to put in test set")
+args = parser.parse_args()
+
+# Check if sum of ratios is greater than 1
+if args.train + args.test + args.val > 1.0:
+  sys.exit("Error: Sum of ratios train, val, and test cannot be greater that 1")
+
+directory = os.path.dirname(args.file)
+
+# Channels of files to make
+channels = ["T1_norm", "T2_norm", "T1C_norm", "FLAIR_norm", "seg", 
+    "preprocess_roi"]
 
 # Open all files
 train_files = [open(output + "train_" + channels[i] + 
