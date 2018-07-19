@@ -112,12 +112,15 @@ print("All filepaths created")
 newCSVFile = None
 # If directory specified make new csv file in that directory
 if args.directory is not None:
+  # check if dir exists, if not make it
+  if not os.path.isdir(args.directory):
+    os.makedirs(args.directory)
   newCSVFile = args.directory
   # Use specified name or use existing name of file
   if args.name is not None:
-    newCSVFile = newCSVFile + args.name
+    newCSVFile = newCSVFile + "/" + args.name
   else:
-    newCSVFile = newCSVFile + os.path.basename(args.file)
+    newCSVFile = newCSVFile + "/" + os.path.basename(args.file)
 # If no directoy, use current directory with given name
 elif args.name is not None:
   newCSVFile = os.path.dirname(args.file) + args.name
