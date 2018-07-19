@@ -35,7 +35,10 @@ parser = argparse.ArgumentParser(description = "Partition filepaths into " +
 parser.add_argument("--file", "-f", help = "CSV with filepaths",
       required = True)
 parser.add_argument("--type", default = "all",
-      help = "Type [HGG, LGG, VAL, TEST, all] in csv file to use")
+      help = "Type [HGG, LGG, VAL, TEST, all] in csv file to use\n" +
+             "Note: 'all' just includes HGG/LGGi." +
+             "If --type not specified, HGG/LGG used in train and " +
+             "VAL and TEST are used for val and test respectively")
 parser.add_argument("--train", default = 0, type = float,
       help = "Ratio [0,1] of cases to put in train set")
 parser.add_argument("--val", default = 0, type = float,
@@ -51,8 +54,8 @@ if args.train + args.test + args.val > 1.0:
 directory = os.path.dirname(args.file)
 
 # Channels of files to make
-channels = ["T1_norm", "T2_norm", "T1C_norm", "FLAIR_norm", "seg", 
-    "preprocess_roi"]
+channels = ["dm_T1_znorm", "dm_T2_znorm", "dm_T1C_znorm", "dm_FLAIR_znorm", "seg", 
+    "dm_roi_mask"]
 
 # Open all files
 train_files = [open(output + "train_" + channels[i] + 
@@ -67,21 +70,60 @@ test_pred = open(output + "test_pred.txt", "w")
 # Read in filenames csv as pandas data frame
 fp = pd.read_csv(filepaths, sep=",")
 
-# For each patient in the data frame
-for i in range(len(fp.index)):
-    # Generate random number and see which range it is in
-    # Then write path of each channel to corresponding text file
-    # If val or test set, also create a new filename for a prediction
-    # output from the neural network
-    split = random.random()
-    if split < train_split:
+if args.type is None:
+  # For each patient in the data frame
+  for i in range(len(fp.index)):
+    split = fp["type"].iloc[i]
+    if split == "HGG" or split == "LGG":
+      for j in ch_range:
+        train_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
+    elif split == "VAL":
+      for j in ch_range:
+        val_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
+      val_pred.write(fp["BraTS18ID"].iloc[i] + "_pred.nii.gz" + "\n")
+    elif split == "TEST":
+      for j in ch_range:
+        test_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
+      test_pred.write(fp["BraTS18ID"].iloc[i] + "_pred.nii.gz" + "\n")
+
+elif args.type == "all":
+  # For each patient in the data frame
+  for i in range(len(fp.index)):
+    if fp["type"].iloc[i] == "HGG" or fp["type"].iloc[i] == "LGG":
+      # Generate random number and see which range it is in
+      # Then write path of each channel to corresponding text file
+      # If val or test set, also create a new filename for a prediction
+      # output from the neural network
+      split = random.random()
+      if split < args.train:
         for j in ch_range:
-            train_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
-    elif split < val_split + train_split:
+          train_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
+      elif split < args.train + args.val:
         for j in ch_range:
-            val_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
+          val_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
         val_pred.write(fp["BraTS18ID"].iloc[i] + "_pred.nii.gz" + "\n")
-    elif split < test_split + val_split + train_split:
+      elif split < args.train + args.val + args.test:
         for j in ch_range:
-            test_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
+          test_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
+        test_pred.write(fp["BraTS18ID"].iloc[i] + "_pred.nii.gz" + "\n")
+
+else:
+  # For each patient in the data frame
+  for i in range(len(fp.index)):
+    if fp["type"].iloc[i] == args.type:
+      # Generate random number and see which range it is in
+      # Then write path of each channel to corresponding text file
+      # If val or test set, also create a new filename for a prediction
+      # output from the neural network
+      split = random.random()
+      if split < args.train:
+        for j in ch_range:
+          train_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
+      elif split < args.train + args.val:
+        for j in ch_range:
+          val_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
+        val_pred.write(fp["BraTS18ID"].iloc[i] + "_pred.nii.gz" + "\n")
+      elif split < args.train + args.val + args.test:
+        for j in ch_range:
+          test_files[j].write(directory + fp[channels[j]].iloc[i] + "\n")
         test_pred.write(fp["BraTS18ID"].iloc[i] + "_pred.nii.gz" + "\n")
