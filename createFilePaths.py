@@ -1,5 +1,5 @@
 #  
-#  Creates image filepaths in a csv from ID names
+#  Creates image filepaths in a csv and excel file from IDs
 #  
 #  Assumes following directory structure
 #    .
@@ -31,6 +31,7 @@
 #      --overwrite, -o        Flag if specified will allow input csv to be
 #                               overwritten. Only used if --directory or --name
 #                               are not specified
+#      --excel, -e            Flag to also make an excel file with viewer column
 #      --name, -n [NAME]      Name of new csv file (default = name of input csv)
 
 import argparse, os
@@ -48,6 +49,8 @@ parser.add_argument("--directory", "-d", default = None,
       help = "Directory to write new CSV to")
 parser.add_argument("--overwrite", "-o", action = "store_true",
       help = "Overwrite given csv of IDs")
+parser.add_argument("--excel", "-e", action = "store_true",
+      help = "Create excel file with filepaths plus viewer column")
 parser.add_argument("--name", "-n", default = None,
       help = "Name of output CSV file")
 args = parser.parse_args()
@@ -81,16 +84,16 @@ for pair in columnPathPairs:
   if pair[0] not in csvFile:
     csvFile[pair[0]] = ""
 
-print("Writing filepaths..")
+print("Writing filepaths...")
 
 # For each ID in csvFile
-for i in range(len(csvPath.index)):
+for i in range(len(csvFile.index)):
   # Get row ID
-  rowID = csvPath[args.id].iloc[i]
+  rowID = csvFile[args.id].iloc[i]
 
   # get row type if exists
   if args.type in csvFile:  
-    rowType = csvPath[args.type].iloc[i] + "/"
+    rowType = csvFile[args.type].iloc[i] + "/"
   else: 
     rowType = ""
 
@@ -100,8 +103,8 @@ for i in range(len(csvPath.index)):
   #   e.g. HGG/Brats_CBICA_ABC_1/Brats_CBICA_ABC_1_t2.nii.gz
   # TODO Check if is blank else skip
   for pair in columnPathPairs:
-    filepath = rowType + rowID + "/" rowID + "_" + pair[1] + "nii.gz"
-    paths.at[i, pair[1]] = filepath
+    filepath = rowType + rowID + "/" + rowID + "_" + pair[1] + ".nii.gz"
+    csvFile.at[i, pair[0]] = filepath
 
 print("All filepaths created")
 
@@ -112,12 +115,12 @@ if args.directory is not None:
   newCSVFile = args.directory
   # Use specified name or use existing name of file
   if args.name is not None:
-    newCSVFile = newCSVFile + "/" + args.name
-  else
-    newCSVFile = newCSVFile + "/" + os.path.basename(args.file)
+    newCSVFile = newCSVFile + args.name
+  else:
+    newCSVFile = newCSVFile + os.path.basename(args.file)
 # If no directoy, use current directory with given name
 elif args.name is not None:
-  newCSVFile = os.path.dirname(args.file) + "/" + args.name
+  newCSVFile = os.path.dirname(args.file) + args.name
 # If no directory or name specified but overwrite flag is true
 # overwrite the input csv file
 elif args.overwrite:
@@ -129,7 +132,38 @@ else:
 
 # Write csv file
 csvFile.to_csv(newCSVFile, index=False)
-print("CSV file written to {0}".format(newCSVFile)
+print("CSV file written to {0}".format(newCSVFile))
 
+if args.excel:
+  print("Creating \"viewer\" column...")
 
+  # Create excel file
+  xlsxFileName = os.path.splitext(newCSVFile)[0] + ".xlsx"
+  xlsxFile = pd.ExcelWriter(xlsxFileName)
 
+  viewerList = []
+  for i in range(len(csvFile.index)):
+    # Get row ID
+    rowID = csvFile[args.id].iloc[i]
+
+    # get row type if exists
+    if args.type in csvFile:
+      rowType = csvFile[args.type].iloc[i] + "/"
+    else:
+      rowType = ""
+
+    viewer = ("=REVIEWTRUTH(1,\"-C " + os.path.dirname(args.file) + 
+              " -f prediction.makefile " + rowType + rowID + 
+              "/reviewtruth\")")
+    viewerList.append(viewer)
+   
+  # Create viewer column with vector
+  csvFile.insert(csvFile.columns.get_loc(
+      columnPathPairs[0][0]), "viewer", viewerList)
+
+  print("Viewer column created")
+
+  # Write excel file
+  csvFile.to_excel(xlsxFile, index=False)
+  xlsxFile.save()
+  print("Excel file written to {0}".format(xlsxFileName))

@@ -1,4 +1,5 @@
 DM_BRATS_PATHLIST/
+BraTS18*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
