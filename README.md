@@ -48,7 +48,7 @@ Use `$ python createFilePaths.py --help` to see arguments.
 
 This will create the following files: `/home/user/newfile.csv` and `/home/user/newfile.xlsx`
 
-###Additional Notes
+### Additional Notes
 
 To change the path columns that the script generates, modify the `columnPathPairs` variable.
 `columnPathPairs` is a list of sublists of length 2.
@@ -60,8 +60,32 @@ Dependencies: pandas
 
 ### deepmedicPreprocess.py
 
-todo
+Uses output csv file from `createFilePaths.py` as input. 
+Normalizes images and create roi mask. 
+To edit what image files are preprocessed, edit the `imageNames` list with columns in the csv to process.
+
+**Usage**
+
+`$ python deepmedicPreprocess.py -f csvwithfilepaths.py`
+
+See comment at the top of the script for additional arguments.
 
 ### deepmedicPartitionData.py
 
-todo
+Creates text files of filepaths to images as required by DeepMedic.
+Uses output csv from `createFilePaths.py` as input.
+By default uses the normalized images + masks from `deepmedicPreprocess.py`.
+See `channels` list in the script to edit what images are used.
+
+**Usage**
+
+`$ python deepmedicPartitionData.py -f csvwithfilepaths.py`
+
+See comment at the top of the script for additional arguments.
+Includes options to specify what types of cases (HGG, LGG, etc.) are used, output directories, and train/val/test splits.
+
+### Build TensorFlow from Source
+
+`build_tensorflow_from_source.txt` contains the steps used to build a custom version of tensorflow for CPUs that do not support AVX and therefore cannot use TensorFlow >1.5.
+Note: finding versions of gcc, CUDA, Cudnn, and Nvidia drivers that work together can be difficult so you may have to try multiple times.
+I found that gcc 5, CUDA 9.1, Cudnn 7.1, and the lastest Nvidia driver worked. The text file also contains multiple links to the references I used. Be sure to read those as well.
